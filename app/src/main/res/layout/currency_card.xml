@@ -47,8 +47,8 @@
             android:layout_alignParentLeft="true"
             android:layout_alignParentStart="true"
             android:layout_below="@+id/curr_card_section"
-            android:layout_toLeftOf="@+id/separator"
             android:layout_marginTop="10dp"
+            android:layout_toLeftOf="@+id/separator"
             android:text="BTC: $ 3381.19"
             android:textColor="@android:color/black"
             android:textSize="16dp" />
@@ -68,7 +68,10 @@
             android:layout_alignParentEnd="true"
             android:layout_alignParentRight="true"
             android:layout_below="@+id/curr_card_section"
+            android:layout_marginLeft="10dp"
+            android:layout_marginStart="10dp"
             android:layout_marginTop="10dp"
+            android:layout_toRightOf="@+id/separator"
             android:text="ETH: $ 3381.19"
             android:textColor="@android:color/black"
             android:textSize="16dp" />

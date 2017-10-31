@@ -10,5 +10,4 @@ public class ArrayHolder {
 
     public static ArrayList<CustomArray> selectedCurrencyList = new ArrayList<>();
 
-
 }

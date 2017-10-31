@@ -25,7 +25,7 @@ public class CreateCardActivity extends AppCompatActivity {
 
     private String mSelectedItem = null;
 
-    private String [] mTitles = {"USD","EUR","KES", "GBP","ZAR","BSD","CHF","COP","CLP","DZD","EGP","ILS","INR","JPY","KPW","KRW","LYD","LRD","NGN","TZS"};
+    private String [] mCurrencies = {"USD","EUR","KES", "GBP","ZAR","BSD","CHF","COP","CLP","DZD","EGP","ILS","INR","JPY","KPW","KRW","LYD","LRD","NGN","TZS"};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,8 +34,8 @@ public class CreateCardActivity extends AppCompatActivity {
 
         mCreateBtn = (Button) findViewById(R.id.create_btn);
         mCurSpinner = (Spinner) findViewById(R.id.currency_spinner);
-        mNameInput = (EditText) findViewById(R.id.nameInput);
-        mNameLayout = (TextInputLayout) findViewById(R.id.name_layout);
+        mNameInput = (EditText) findViewById(R.id.titleInput);
+        mNameLayout = (TextInputLayout) findViewById(R.id.title_layout);
 
         mCurSpinner.setOnItemSelectedListener(new CustomOnItemSelectedListener());
 
@@ -49,7 +49,7 @@ public class CreateCardActivity extends AppCompatActivity {
                     startActivity(new Intent(CreateCardActivity.this, MainActivity.class));
 
                 }else {
-                    mNameLayout.setError("Title cannot be empty");
+                    mNameLayout.setError("Currency title cannot be empty");
                 }
 
             }
@@ -57,13 +57,12 @@ public class CreateCardActivity extends AppCompatActivity {
 
         currencyList = new ArrayList<>();
 
-        for (int i = 0; i < mTitles.length; i++){
+        for (int i = 0; i < mCurrencies.length; i++){
 
-            String title = mTitles[i];
+            String title = mCurrencies[i];
             currencyList.add(title);
 
         }
-
 
         ArrayAdapter<String> myAdapter = new ArrayAdapter<>(CreateCardActivity.this, android.R.layout.simple_spinner_item, currencyList);
         myAdapter.setDropDownViewResource(android.R.layout.simple_list_item_checked);
