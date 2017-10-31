@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">CryptoCompare</string>
+    <string name="action_settings">Settings</string>
+    <string name="create_currency_card">Create Currency Card</string>
+</resources>

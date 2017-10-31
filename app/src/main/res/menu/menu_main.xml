@@ -1,0 +1,10 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.example.kim.cryptocompare.MainActivity">
+    <item
+        android:id="@+id/action_create_card"
+        android:orderInCategory="100"
+        android:title="@string/create_currency_card"
+        app:showAsAction="never" />
+</menu>
