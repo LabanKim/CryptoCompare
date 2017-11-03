@@ -49,7 +49,8 @@
             android:layout_below="@+id/curr_card_section"
             android:layout_marginTop="10dp"
             android:layout_toLeftOf="@+id/separator"
-            android:text="BTC: $ 3381.19"
+            android:text="BTC:\n $ 3381.19"
+            android:textAlignment="center"
             android:textColor="@android:color/black"
             android:textSize="16dp" />
 
@@ -61,20 +62,30 @@
             android:layout_centerHorizontal="true"
             android:background="@android:color/holo_red_dark" />
 
+
         <TextView
             android:id="@+id/eth_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
-            android:layout_alignParentRight="true"
             android:layout_below="@+id/curr_card_section"
             android:layout_marginLeft="10dp"
             android:layout_marginStart="10dp"
             android:layout_marginTop="10dp"
+            android:layout_toLeftOf="@+id/remove_btn"
             android:layout_toRightOf="@+id/separator"
             android:text="ETH: $ 3381.19"
+            android:textAlignment="center"
             android:textColor="@android:color/black"
             android:textSize="16dp" />
+
+        <ImageView
+            android:id="@+id/remove_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            app:srcCompat="@android:drawable/ic_delete" />
 
 
     </RelativeLayout>

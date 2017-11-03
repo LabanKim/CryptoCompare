@@ -4,10 +4,10 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -15,32 +15,28 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.Volley;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private List<Currency> currencyList = new ArrayList<>();
     private RecyclerView mMainRecycler;
     private Button mRetryBtn;
+    private TextView mHeaderText;
 
     private CurrencyAdapter mAdapter;
     private ProgressDialog mProgresss;
@@ -58,27 +55,48 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+
+        ArrayHolder.selectedCurrencyList = getArrayVal(this);
+
 
         if (ArrayHolder.selectedCurrencyList.size()==0){
 
-            startActivity(new Intent(MainActivity.this, CreateCardActivity.class));
+            Intent createIntent = new Intent(MainActivity.this, CreateCardActivity.class);
+            createIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(createIntent);
+            finish();
+
+        }else{
+
+            StringBuilder builder = new StringBuilder();
+            for (CustomArray curList : ArrayHolder.selectedCurrencyList){
+
+                builder.append(curList.getCurr()+",");
+
+            }
+
+            jsonURL = "https://min-api.cryptocompare.com/data/pricemulti?fsyms=BTC,ETH&tsyms="+builder.toString();
+
+            mAdapter = new CurrencyAdapter(currencyList);
+
+            new GetCurrencies().execute();
+
+            if (jsonURL!=null){
+
+                final Handler ha=new Handler();
+                ha.postDelayed(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        refresh();
+
+                        ha.postDelayed(this, 20000);
+                    }
+                }, 20000);
+
+            }
 
         }
-
-        StringBuilder builder = new StringBuilder();
-        for (CustomArray curList : ArrayHolder.selectedCurrencyList){
-
-            builder.append(curList.getCurr()+",");
-
-        }
-
-        jsonURL = "https://min-api.cryptocompare.com/data/pricemulti?fsyms=BTC,ETH&tsyms="+builder.toString();
-
-        mAdapter = new CurrencyAdapter(currencyList);
-
-        new GetCurrencies().execute();
 
     }
 
@@ -99,6 +117,30 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
+        if (id == R.id.action_refresh) {
+
+            refresh();
+
+            return true;
+        }
+
+        if (id == R.id.action_clear_cards) {
+
+            currencyList.clear();
+            ArrayHolder.selectedCurrencyList.clear();
+            mAdapter.notifyDataSetChanged();
+
+            CreateCardActivity.storeArrayVal(ArrayHolder.selectedCurrencyList,MainActivity.this);
+
+            mHeaderText.setText("No cards available, Create a new card.");
+
+            RelativeLayout.LayoutParams lp = (RelativeLayout.LayoutParams) mHeaderText.getLayoutParams();
+            lp.addRule(RelativeLayout.CENTER_IN_PARENT,RelativeLayout.TRUE);
+            mHeaderText.setLayoutParams(lp);
+
+            return true;
+        }
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -109,6 +151,7 @@ public class MainActivity extends AppCompatActivity {
 
         public class MyViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
             public TextView etheriumText, btcCurrency, currText, cardHeader;
+            public ImageView removeBtn;
 
             public MyViewHolder(View view) {
                 super(view);
@@ -117,6 +160,7 @@ public class MainActivity extends AppCompatActivity {
                 btcCurrency = view.findViewById(R.id.btc_text);
                 cardHeader = view.findViewById(R.id.card_header);
                 currText = view.findViewById(R.id.card_header2);
+                removeBtn = view.findViewById(R.id.remove_btn);
             }
 
             @Override
@@ -124,12 +168,12 @@ public class MainActivity extends AppCompatActivity {
 
                 final int selectedItemPosition = mMainRecycler.getChildPosition(view);
 
-                final AlertDialog.Builder builder=new AlertDialog.Builder(MainActivity.this);
+                final AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
                 builder.setTitle("Choose conversion type:");
                 builder.setCancelable(false);
-                final ListView optionList=new ListView(MainActivity.this);
-                final String[] optionsArray= new String[]{"Bitcoin","Etherium"};
-                final ArrayAdapter<String> adapter=new ArrayAdapter<>(MainActivity.this, android.R.layout.simple_selectable_list_item,optionsArray);
+                final ListView optionList = new ListView(MainActivity.this);
+                final String[] optionsArray = new String[]{"Bitcoin", "Etherium"};
+                final ArrayAdapter<String> adapter = new ArrayAdapter<>(MainActivity.this, android.R.layout.simple_selectable_list_item, optionsArray);
                 optionList.setAdapter(adapter);
 
                 builder.setView(optionList);
@@ -138,21 +182,21 @@ public class MainActivity extends AppCompatActivity {
                 optionList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                     @Override
                     public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
-                        String option=adapter.getItem(position);
+                        String option = adapter.getItem(position);
 
-                        if (option.equals("Bitcoin")){
+                        if (option.equals("Bitcoin")) {
 
-                            Intent btcIntent=new Intent(MainActivity.this, BitcoinCoversionActivity.class);
-                            btcIntent.putExtra("currency",currencyList.get(selectedItemPosition).getTitle() );
-                            btcIntent.putExtra("bitcoin",currencyList.get(selectedItemPosition).getBtcValue());
+                            Intent btcIntent = new Intent(MainActivity.this, BitcoinCoversionActivity.class);
+                            btcIntent.putExtra("currency", currencyList.get(selectedItemPosition).getTitle());
+                            btcIntent.putExtra("bitcoin", currencyList.get(selectedItemPosition).getBtcValue());
                             startActivity(btcIntent);
 
 
-                        }else if (option.equals("Etherium")){
+                        } else if (option.equals("Etherium")) {
 
-                            Intent ethIntent=new Intent(MainActivity.this, EtheriumConversionActivity.class);
-                            ethIntent.putExtra("currency",currencyList.get(selectedItemPosition).getTitle() );
-                            ethIntent.putExtra("etherium",currencyList.get(selectedItemPosition).getEthValue());
+                            Intent ethIntent = new Intent(MainActivity.this, EtheriumConversionActivity.class);
+                            ethIntent.putExtra("currency", currencyList.get(selectedItemPosition).getTitle());
+                            ethIntent.putExtra("etherium", currencyList.get(selectedItemPosition).getEthValue());
                             startActivity(ethIntent);
 
                         }
@@ -169,6 +213,7 @@ public class MainActivity extends AppCompatActivity {
                 builder.show();
 
             }
+
         }
 
 
@@ -185,12 +230,25 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onBindViewHolder(MyViewHolder holder, int position) {
+        public void onBindViewHolder(MyViewHolder holder, final int position) {
             Currency cs = currencyList.get(position);
-            holder.etheriumText.setText("ETH: "+cs.getEthValue());
-            holder.btcCurrency.setText("BTC: "+cs.getBtcValue());
+            holder.etheriumText.setText("ETH:\n "+cs.getEthValue());
+            holder.btcCurrency.setText("BTC:\n "+cs.getBtcValue());
             holder.cardHeader.setText(ArrayHolder.selectedCurrencyList.get(position).getTitle());
             holder.currText.setText("( "+cs.getTitle()+" )");
+
+            holder.removeBtn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+
+                    currencyList.remove(position);
+                    ArrayHolder.selectedCurrencyList.remove(position);
+                    mAdapter.notifyDataSetChanged();
+
+                    CreateCardActivity.storeArrayVal(ArrayHolder.selectedCurrencyList,MainActivity.this);
+
+                }
+            });
         }
 
         @Override
@@ -210,7 +268,7 @@ public class MainActivity extends AppCompatActivity {
 
             mProgresss = new ProgressDialog(MainActivity.this);
             mProgresss.setCanceledOnTouchOutside(false);
-            mProgresss.setMessage("Loading data from JSON...");
+            mProgresss.setMessage("Loading data from Server...");
             mProgresss.show();
 
         }
@@ -242,16 +300,6 @@ public class MainActivity extends AppCompatActivity {
                 }
                 mProgresss.dismiss();
 
-            } else {
-                mProgresss.dismiss();
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(getApplicationContext(),
-                                "Couldn't get json from server",
-                                Toast.LENGTH_SHORT).show();
-                    }
-                });
             }
 
             return null;
@@ -261,27 +309,146 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(Void result) {
             super.onPostExecute(result);
 
-            mAdapter.notifyDataSetChanged();
+            if (jsonStr!=null){
 
-            setContentView(R.layout.activity_main);
-            Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-            setSupportActionBar(toolbar);
+                mProgresss.dismiss();
 
-            mMainRecycler = (RecyclerView) findViewById(R.id.main_recyclerview);
-            mMainRecycler.setItemAnimator(new DefaultItemAnimator());
-            mMainRecycler.setLayoutManager(new LinearLayoutManager(MainActivity.this));
-            mMainRecycler.setAdapter(mAdapter);
+                setContentView(R.layout.activity_main);
+                Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+                setSupportActionBar(toolbar);
 
-            FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-            fab.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    startActivity(new Intent(MainActivity.this, CreateCardActivity.class));
-                }
-            });
-            mProgresss.dismiss();
+                mHeaderText = (TextView) findViewById(R.id.headerText);
+                mMainRecycler = (RecyclerView) findViewById(R.id.main_recyclerview);
+                mMainRecycler.setItemAnimator(new DefaultItemAnimator());
+                mMainRecycler.setLayoutManager(new LinearLayoutManager(MainActivity.this));
+
+                mHeaderText.setVisibility(View.VISIBLE);
+                mMainRecycler.setAdapter(mAdapter);
+                mAdapter.notifyDataSetChanged();
+
+                FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+                fab.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        startActivity(new Intent(MainActivity.this, CreateCardActivity.class));
+                    }
+                });
+
+
+            }else {
+
+                mProgresss.dismiss();
+
+                setContentView(R.layout.error_layout);
+
+                mRetryBtn = (Button) findViewById(R.id.retry_btn);
+                mRetryBtn.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+
+                        new GetCurrencies().execute();
+
+                    }
+                });
+
+                Toast.makeText(MainActivity.this, "Failed to connect to the server. Check your internet connection.", Toast.LENGTH_SHORT).show();
+
+            }
 
         }
     }
+
+    private class RefreshCurrencies extends AsyncTask<Void, Void, Void> {
+
+        String jsonStr = null;
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+
+        }
+
+        @Override
+        protected Void doInBackground(Void... arg0) {
+            HttpHandler handler = new HttpHandler();
+
+            jsonStr = handler.makeServiceCall(jsonURL);
+
+            if (jsonStr != null) {
+                try {
+                    JSONObject btcObj = new JSONObject(jsonStr).getJSONObject("BTC");
+                    JSONObject ethObj = new JSONObject(jsonStr).getJSONObject("ETH");
+
+                    currencyList.clear();
+
+                    for (int i =0; i < ArrayHolder.selectedCurrencyList.size(); i++){
+
+                        Double btcVal = btcObj.getDouble(ArrayHolder.selectedCurrencyList.get(i).getCurr());
+                        Double ethVal = ethObj.getDouble(ArrayHolder.selectedCurrencyList.get(i).getCurr());
+                        Currency sCurrency = new Currency(ArrayHolder.selectedCurrencyList.get(i).getCurr(),btcVal , ethVal);
+                        currencyList.add(sCurrency);
+
+                    }
+
+                } catch (final JSONException e) {
+
+
+                }
+                mProgresss.dismiss();
+
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void result) {
+            super.onPostExecute(result);
+
+            if (jsonStr!=null){
+
+                mMainRecycler.setAdapter(mAdapter);
+                mAdapter.notifyDataSetChanged();
+
+                mProgresss.dismiss();
+
+            }else {
+
+            }
+
+        }
+    }
+
+    private void refresh(){
+
+        new RefreshCurrencies().execute();
+
+    }
+
+    public static ArrayList getArrayVal( Context ctx)
+    {
+        SharedPreferences shref = ctx.getSharedPreferences("currArrayValues", Context.MODE_PRIVATE);
+
+        ArrayList<CustomArray>   rArray;
+        Gson gson;
+        gson = new GsonBuilder().create();
+        String response = shref.getString("currArray", null);
+
+        if (response!=null){
+
+            Type type = new TypeToken<ArrayList<CustomArray>>(){}.getType();
+            rArray = gson.fromJson(response, type);
+
+        }else {
+
+            rArray = new ArrayList<>();
+
+        }
+
+        return rArray;
+
+    }
+
 
 }

@@ -1,9 +1,11 @@
 package com.example.kim.cryptocompare;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Bundle;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.AdapterView;
@@ -13,7 +15,10 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class CreateCardActivity extends AppCompatActivity {
 
@@ -44,9 +49,36 @@ public class CreateCardActivity extends AppCompatActivity {
             public void onClick(View view) {
                 if (!TextUtils.isEmpty(mNameInput.getText())){
 
+                    if (ArrayHolder.selectedCurrencyList.size()!=0){
+
+                        Iterator<CustomArray> iter = ArrayHolder.selectedCurrencyList.iterator();
+
+                        while (iter.hasNext()){
+
+                            String curr = iter.next().getCurr();
+
+                            if (curr.equals(mSelectedItem)) {
+
+                                Toast.makeText(CreateCardActivity.this, "Card already exists", Toast.LENGTH_LONG).show();
+                                return;
+
+                            }
+
+                        }
+                    }
+
+
                     ArrayHolder.selectedCurrencyList.add(new CustomArray(mNameInput.getText().toString(), mSelectedItem));
+
+                    storeArrayVal( ArrayHolder.selectedCurrencyList,CreateCardActivity.this);
+
                     Toast.makeText(CreateCardActivity.this, "Card Created Successfully", Toast.LENGTH_LONG).show();
-                    startActivity(new Intent(CreateCardActivity.this, MainActivity.class));
+                    Intent mainIntent = new Intent(CreateCardActivity.this, MainActivity.class);
+                    mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(mainIntent);
+                    finish();
+
+
 
                 }else {
                     mNameLayout.setError("Currency title cannot be empty");
@@ -82,6 +114,19 @@ public class CreateCardActivity extends AppCompatActivity {
         public void onNothingSelected(AdapterView<?> arg0) {
             // TODO Auto-generated method stub
         }
+
+    }
+
+    public static void storeArrayVal(ArrayList<CustomArray> inArrayList, Context context)
+    {
+        SharedPreferences shref = context.getSharedPreferences("currArrayValues", Context.MODE_PRIVATE);
+        SharedPreferences.Editor prefEditor = shref.edit();
+
+        Gson gson = new Gson();
+        String json = gson.toJson(inArrayList);
+
+        prefEditor.putString("currArray", json);
+        prefEditor.commit();
 
     }
 
